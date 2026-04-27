@@ -265,6 +265,110 @@ Total > 60 → "Type 2 Diabetes Mellitus — HIGH RISK"
 
 ---
 
+## 📦 Datasets and Clinical References
+
+The AI engine uses **evidence-based clinical reference ranges** derived from internationally recognized medical datasets and guidelines. No external ML model is used — all logic is implemented as transparent, auditable clinical rules.
+
+---
+
+### 🗃️ Datasets Used
+
+| # | Dataset | Source | Records | Used For |
+|---|---------|--------|---------|----------|
+| 1 | **Pima Indians Diabetes Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/34/diabetes) | 768 patients | Diabetes detection thresholds — Glucose, BMI, Age, Insulin |
+| 2 | **Chronic Kidney Disease Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/336/chronic+kidney+disease) | 400 patients | CKD staging — Creatinine, Urea, Proteinuria, Haemoglobin |
+| 3 | **Liver Disorders Dataset (BUPA)** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/60/liver+disorders) | 345 records | Liver disease rules — ALT, AST, GGT, Bilirubin |
+| 4 | **Thyroid Disease Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/102/thyroid+disease) | 3,772 records | Thyroid classification — TSH, T3, T4 normal ranges |
+| 5 | **Heart Disease Dataset** | [Kaggle / UCI](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset) | 1,025 records | Lipid rules — Cholesterol, HDL, LDL, Triglycerides |
+| 6 | **Blood Cell Count Dataset** | [Kaggle](https://www.kaggle.com/datasets/paultimothymooney/blood-cells) | 12,500 images | CBC reference range validation — WBC, RBC, Platelets |
+| 7 | **Anemia Dataset** | [Kaggle](https://www.kaggle.com/datasets/biswaranjanrao/anemia-dataset) | 1,421 records | Anaemia detection — Haemoglobin, RBC, MCH, MCHC |
+| 8 | **Urinalysis Reference Dataset** | [CLSI GP16 Guidelines](https://clsi.org) | Clinical standard | Urine parameter norms — pH, Protein, Nitrite, Leukocytes |
+
+---
+
+### 🏛️ Clinical Guidelines and Standards
+
+| Standard | Organization | Parameters Governed |
+|----------|-------------|---------------------|
+| **ADA Standards of Medical Care in Diabetes** | American Diabetes Association | Glucose cutoffs: Fasting >126 mg/dL = Diabetes; HbA1c >=6.5% = Diabetes |
+| **KDIGO CKD Clinical Practice Guidelines** | Kidney Disease Improving Global Outcomes | CKD staging by eGFR; Creatinine and Urea thresholds by gender |
+| **AASLD Practice Guidelines for Liver Disease** | American Association for the Study of Liver Diseases | ALT/AST upper limits of normal; Bilirubin and jaundice thresholds |
+| **AHA/ACC Lipid Management Guidelines** | American Heart Association / ACC | LDL <100 optimal; Total Cholesterol <200; Triglycerides <150 mg/dL |
+| **WHO Haemoglobin Reference Values** | World Health Organization | Gender-specific Hgb: Male 13.5-17.5, Female 12.0-15.5 g/dL |
+| **ICSH CBC Reference Ranges** | International Council for Standardization in Haematology | WBC 4.5-11, Platelets 150-400 x10 cubed/uL normal ranges |
+| **ATA Thyroid Guidelines** | American Thyroid Association | TSH normal range: 0.4-4.5 mIU/L; T3/T4 reference intervals |
+
+---
+
+### 📊 Complete Reference Ranges Table
+
+#### Blood Parameters
+
+| Parameter | Male Normal Range | Female Normal Range | Unit | Flagged When |
+|-----------|------------------|---------------------|------|--------------|
+| Hemoglobin | 13.5 - 17.5 | 12.0 - 15.5 | g/dL | Below = Anaemia risk |
+| WBC Count | 4.5 - 11.0 | 4.5 - 11.0 | x10 cubed/uL | High = Infection; Low = Immune suppression |
+| RBC Count | 4.7 - 6.1 | 4.2 - 5.4 | x10 to the 6/uL | Low = Anaemia; High = Polycythaemia |
+| Platelets | 150 - 400 | 150 - 400 | x10 cubed/uL | Low = Dengue/ITP risk; High = Thrombocytosis |
+| Fasting Glucose | 70 - 100 | 70 - 100 | mg/dL | 100-125 = Pre-diabetic; 126+ = Diabetic |
+| HbA1c | less than 5.7% | less than 5.7% | % | 5.7-6.4 = Pre-DM; 6.5+ = Diabetes |
+| Total Cholesterol | less than 200 | less than 200 | mg/dL | 200-239 = Borderline high |
+| LDL Cholesterol | less than 100 | less than 100 | mg/dL | 130+ = High; 160+ = Very high |
+| HDL Cholesterol | greater than 40 | greater than 50 | mg/dL | Below = Low HDL (cardiac risk) |
+| Triglycerides | less than 150 | less than 150 | mg/dL | 150-199 = Borderline; 500+ = Pancreatitis risk |
+| Creatinine | 0.7 - 1.3 | 0.6 - 1.1 | mg/dL | Elevated = Kidney dysfunction |
+| Urea / BUN | 7 - 20 | 7 - 20 | mg/dL | Elevated = Kidney or dehydration |
+| ALT (SGPT) | 7 - 56 | 7 - 56 | U/L | Elevated = Liver cell damage |
+| AST (SGOT) | 10 - 40 | 10 - 40 | U/L | Elevated = Liver or muscle damage |
+| TSH | 0.4 - 4.5 | 0.4 - 4.5 | mIU/L | High = Hypothyroid; Low = Hyperthyroid |
+| Vitamin D | 30 - 100 | 30 - 100 | ng/mL | less than 20 = Deficiency; less than 12 = Severe |
+| Vitamin B12 | 200 - 900 | 200 - 900 | pg/mL | less than 200 = Deficiency causing neurological risk |
+| Iron | 60 - 170 | 60 - 170 | ug/dL | Low = Iron deficiency / pre-anaemia |
+
+#### Urine Parameters
+
+| Parameter | Normal Value | Abnormal Indicates |
+|-----------|-------------|-------------------|
+| Color | Pale yellow to amber | Dark = Dehydration / Jaundice |
+| Appearance | Clear | Turbid = Infection or crystals |
+| pH | 4.5 - 8.0 | Alkaline = UTI; Acidic = DKA |
+| Specific Gravity | 1.005 - 1.030 | Low = Dilute; High = Dehydrated |
+| Protein | Negative | Positive = Kidney disease / Nephrotic syndrome |
+| Glucose | Negative | Positive = Uncontrolled diabetes |
+| Ketones | Negative | Positive = DKA / Starvation |
+| Blood | Negative | Positive = Kidney stones / UTI / Glomerulonephritis |
+| Bilirubin | Negative | Positive = Liver disease / Obstructive jaundice |
+| Urobilinogen | Normal (0.1-1 mg/dL) | Elevated = Haemolysis / Liver disease |
+| Nitrite | Negative | Positive = Bacterial infection (UTI) |
+| Leukocytes | Negative | Positive = Inflammation / UTI |
+
+---
+
+### 🧮 Disease Detection Logic Summary
+
+| Disease | Key Parameters | Threshold Rule | Probability |
+|---------|---------------|----------------|-------------|
+| Type 2 Diabetes | Glucose, HbA1c, Urine Glucose | Glucose >=126 AND/OR HbA1c >=6.5% | Up to 95% |
+| Pre-Diabetes | Glucose, HbA1c | Glucose 100-125 OR HbA1c 5.7-6.4% | Up to 45% |
+| DKA | Glucose, Urine Ketones | Glucose >250 + Ketones moderate/large | Up to 90% |
+| Iron Deficiency Anaemia | Haemoglobin, Iron | Hgb low + Fe <60 ug/dL | Up to 80% |
+| B12 Deficiency Anaemia | Haemoglobin, B12 | Hgb low + B12 <200 pg/mL | Up to 75% |
+| CKD | Creatinine, Urea, Urine Protein | Creatinine elevated + Proteinuria | Up to 90% |
+| Nephrotic Syndrome | Urine Protein | 3+ or 4+ Protein in urine | Up to 75% |
+| UTI | Urine Nitrite, Leukocytes | Nitrite positive + Leukocytes | Up to 85% |
+| Liver Disease / Hepatitis | ALT, AST, Urine Bilirubin | ALT >56 and/or Bilirubin in urine | Up to 91% |
+| NAFLD | ALT, BMI | Mild ALT elevation + High BMI | Up to 70% |
+| Dyslipidaemia | Cholesterol, LDL, HDL, TG | Multiple lipid abnormalities | Up to 90% |
+| Hypothyroidism | TSH | TSH >4.5 mIU/L | Up to 88% |
+| Hyperthyroidism | TSH | TSH <0.4 mIU/L | Up to 85% |
+| Thrombocytopenia / Dengue | Platelets | Platelets <150 x10 cubed/uL | Up to 90% |
+| Vitamin D Deficiency | Vitamin D | Vit D <30 ng/mL | Up to 90% |
+| Sepsis Risk | WBC, Symptoms | WBC >15 + fever symptoms | Up to 72% |
+
+> All probability scores are capped at 95% — the engine never claims 100% certainty. Always consult a qualified physician.
+
+---
+
 ## 🛠️ Tech Stack
 
 <div align="center">
