@@ -265,6 +265,75 @@ Total > 60 → "Type 2 Diabetes Mellitus — HIGH RISK"
 
 ---
 
+## 📦 Datasets & Clinical References
+
+The AI engine is built on **clinically validated reference ranges** from international medical guidelines. Below are the key datasets and standards used:
+
+<div align="center">
+
+| Dataset / Standard | Source | Used For |
+|:---|:---:|:---|
+| **Pima Indians Diabetes Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/34/diabetes) | Diabetes prediction thresholds (Glucose, BMI, Age) |
+| **Chronic Kidney Disease Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/336/chronic+kidney+disease) | CKD detection (Creatinine, Urea, Protein in urine) |
+| **Liver Disorders Dataset (BUPA)** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/60/liver+disorders) | Liver disease thresholds (ALT, AST, GGT) |
+| **Thyroid Disease Dataset** | [UCI ML Repository](https://archive.ics.uci.edu/dataset/102/thyroid+disease) | Thyroid classification (TSH, T3, T4 ranges) |
+| **Heart Disease Dataset** | [UCI / Kaggle](https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset) | Dyslipidemia rules (Cholesterol, HDL, LDL, Triglycerides) |
+| **CBC Reference Ranges** | [WHO / ICSH Guidelines](https://www.who.int) | Blood cell thresholds (Hemoglobin, WBC, Platelets, RBC) |
+| **ADA Diabetes Standards** | [American Diabetes Association](https://diabetes.org) | Glucose (>126 mg/dL) and HbA1c (≥6.5%) cutoffs |
+| **KDIGO CKD Guidelines** | [Kidney Disease: Improving Global Outcomes](https://kdigo.org) | eGFR, Creatinine, and Proteinuria staging |
+| **AASLD Liver Guidelines** | [American Association for the Study of Liver Diseases](https://www.aasld.org) | ALT/AST upper limits of normal |
+| **Urine Analysis Standards** | [CLSI GP16 Guidelines](https://clsi.org) | Urinalysis reference ranges (pH, protein, nitrite, etc.) |
+
+</div>
+
+### 📊 Parameter Reference Ranges Used
+
+```
+BLOOD PARAMETERS               NORMAL RANGE            UNIT
+─────────────────────────────────────────────────────────────
+Hemoglobin (Male)              13.5 – 17.5             g/dL
+Hemoglobin (Female)            12.0 – 15.5             g/dL
+WBC Count                      4.5 – 11.0              ×10³/µL
+RBC Count (Male)               4.7 – 6.1               ×10⁶/µL
+RBC Count (Female)             4.2 – 5.4               ×10⁶/µL
+Platelets                      150 – 400               ×10³/µL
+Fasting Glucose                70 – 100                mg/dL
+HbA1c (Normal)                 < 5.7                   %
+HbA1c (Pre-Diabetes)           5.7 – 6.4               %
+HbA1c (Diabetes)               ≥ 6.5                   %
+Total Cholesterol              < 200                   mg/dL
+LDL Cholesterol                < 100                   mg/dL
+HDL (Male)                     > 40                    mg/dL
+HDL (Female)                   > 50                    mg/dL
+Triglycerides                  < 150                   mg/dL
+Creatinine (Male)              0.7 – 1.3               mg/dL
+Creatinine (Female)            0.6 – 1.1               mg/dL
+Urea / BUN                     7 – 20                  mg/dL
+ALT (SGPT)                     7 – 56                  U/L
+AST (SGOT)                     10 – 40                 U/L
+TSH                            0.4 – 4.5               mIU/L
+Vitamin D                      30 – 100                ng/mL
+Vitamin B12                    200 – 900               pg/mL
+Iron                           60 – 170                µg/dL
+
+URINE PARAMETERS               NORMAL VALUE            UNIT
+─────────────────────────────────────────────────────────────
+pH                             4.5 – 8.0               —
+Specific Gravity               1.005 – 1.030           —
+Protein                        Negative                —
+Glucose                        Negative                —
+Ketones                        Negative                —
+Blood                          Negative                —
+Bilirubin                      Negative                —
+Urobilinogen                   Normal (0.1–1 mg/dL)    —
+Nitrite                        Negative                —
+Leukocytes                     Negative                —
+```
+
+> 💡 **All thresholds are gender-adjusted and age-aware** where clinically relevant (e.g. Hemoglobin, Creatinine, HDL differ by gender).
+
+---
+
 ## 🛠️ Tech Stack
 
 <div align="center">
