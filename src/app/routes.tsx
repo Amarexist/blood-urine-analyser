@@ -4,6 +4,7 @@ import UploadReport from './pages/UploadReport';
 import ReportView from './pages/ReportView';
 import ManualEntry from './pages/ManualEntry';
 import AnalysisResult from './pages/AnalysisResult';
+import WellnessChat from './pages/WellnessChat';
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +30,10 @@ export const router = createBrowserRouter([
   {
     path: '/analysis/:analysisId',
     Component: AnalysisResult,
+  },
+  {
+    path: '/wellness-chat',
+    Component: WellnessChat,
   },
   {
     path: '*',

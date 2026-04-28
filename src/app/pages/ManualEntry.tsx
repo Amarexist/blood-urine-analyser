@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { ArrowLeft, Activity, Droplet, Stethoscope, AlertCircle, Sliders, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Activity, Droplet, Stethoscope, AlertCircle, Sliders, ChevronDown, ChevronUp, Cpu, Zap } from 'lucide-react';
 import { analyzeLocally } from '../utils/localAnalyzer';
+import { isMLServerAvailable, callMLBackend } from '../utils/mlopsClient';
 
 interface BloodParameters {
   hemoglobin: string;
@@ -363,17 +364,60 @@ export default function ManualEntry() {
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setLoading(true);
     setError('');
     try {
+      // ── Try MLOps XGBoost backend first ──────────────────────────────────
+      const mlAvailable = await isMLServerAvailable();
+
+      if (mlAvailable) {
+        try {
+          const allParams = {
+            ...bloodParams,
+            urineProtein:    urineParams.protein,
+            urineGlucose:    urineParams.glucose,
+            urineKetones:    urineParams.ketones,
+            urineBlood:      urineParams.blood,
+            urineNitrite:    urineParams.nitrite,
+            urineLeukocytes: urineParams.leukocytes,
+          };
+          const mlResult = await callMLBackend(allParams);
+
+          // Build a result object compatible with AnalysisResult page
+          const analysisId = `ml-${Date.now().toString(36)}`;
+          const enriched = {
+            id: analysisId,
+            source: 'ml-model',
+            patientInfo,
+            mlPrediction: mlResult,
+            // Also run local engine for diet/nutrition/lifestyle recommendations
+            ...analyzeLocally({
+              patientInfo,
+              bloodParameters: bloodParams as Record<string, string>,
+              urineParameters: urineParams as Record<string, string>,
+              symptoms: selectedSymptoms,
+            }),
+            id: analysisId,
+            mlPrediction: mlResult,
+            source: 'ml-model',
+          };
+          sessionStorage.setItem(`analysis_${analysisId}`, JSON.stringify(enriched));
+          navigate(`/analysis/${analysisId}`);
+          return;
+        } catch (mlErr) {
+          console.warn('ML backend error — falling back to rule engine', mlErr);
+        }
+      }
+
+      // ── Fallback: local rule-based engine ────────────────────────────────
       const result = analyzeLocally({
         patientInfo,
         bloodParameters: bloodParams as Record<string, string>,
         urineParameters: urineParams as Record<string, string>,
         symptoms: selectedSymptoms,
       });
-      sessionStorage.setItem(`analysis_${result.id}`, JSON.stringify(result));
+      sessionStorage.setItem(`analysis_${result.id}`, JSON.stringify({ ...result, source: 'rule-engine' }));
       navigate(`/analysis/${result.id}`);
     } catch (err: any) {
       setError(err.message || 'Analysis failed. Please try again.');

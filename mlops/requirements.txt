@@ -1,0 +1,36 @@
+# Core ML
+xgboost==2.0.3
+scikit-learn==1.4.2
+numpy==1.26.4
+pandas==2.2.2
+imbalanced-learn==0.12.3
+
+# MLflow - Experiment Tracking + Registry
+mlflow==2.13.0
+
+# FastAPI - Model Serving
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# DVC - Data Versioning
+dvc==3.50.1
+
+# Model Export
+skl2onnx==1.16.0
+onnxruntime==1.18.0
+
+# Monitoring
+evidently==0.4.30
+
+# Explainability
+shap==0.45.1
+
+# Hyperparameter Optimization
+optuna==3.6.1
+
+# Utilities
+python-dotenv==1.0.1
+joblib==1.4.2
+matplotlib==3.9.0
+seaborn==0.13.2

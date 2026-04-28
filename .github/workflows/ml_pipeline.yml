@@ -1,0 +1,265 @@
+name: HealthTrack AI — MLOps Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mlops/**'
+      - 'dvc.yaml'
+  schedule:
+    - cron: '0 2 * * 1'   # Every Monday 2:00 AM UTC (auto-retrain)
+  workflow_dispatch:        # Manual trigger button in GitHub UI
+    inputs:
+      force_retrain:
+        description: 'Force model retraining even without data changes'
+        required: false
+        default: 'false'
+
+jobs:
+  # ── 1. Data Generation & Versioning ─────────────────────────────────────────
+  data-pipeline:
+    name: 📦 Data Generation & DVC
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r mlops/requirements.txt
+
+      - name: Generate / pull latest data
+        run: python mlops/generate_data.py
+
+      - name: Upload dataset artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clinical-dataset
+          path: mlops/data/clinical_dataset.csv
+          retention-days: 30
+
+  # ── 2. Model Training ────────────────────────────────────────────────────────
+  train:
+    name: 🧠 Train XGBoost Model
+    runs-on: ubuntu-latest
+    needs: data-pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r mlops/requirements.txt
+
+      - name: Download dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: clinical-dataset
+          path: mlops/data/
+
+      - name: Run training pipeline
+        run: python mlops/train.py
+
+      - name: Upload trained model
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: |
+            mlops/models/healthtrack_model.json
+            mlops/models/model_meta.json
+          retention-days: 90
+
+      - name: Upload training reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-reports
+          path: mlops/reports/
+          retention-days: 30
+
+  # ── 3. Model Validation (Quality Gate) ───────────────────────────────────────
+  validate:
+    name: ✅ Model Quality Gate
+    runs-on: ubuntu-latest
+    needs: train
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r mlops/requirements.txt
+
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: mlops/models/
+
+      - name: Download dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: clinical-dataset
+          path: mlops/data/
+
+      - name: Run validation checks
+        run: |
+          python - <<'EOF'
+          import json
+          from pathlib import Path
+
+          # Load model metadata
+          meta_path = Path("mlops/models/model_meta.json")
+          if not meta_path.exists():
+              print("❌ Model metadata not found — training may have failed")
+              exit(1)
+
+          with open(meta_path) as f:
+              meta = json.load(f)
+
+          f1    = meta.get("f1_macro", 0)
+          auc   = meta.get("roc_auc", 0)
+
+          print(f"Model Metrics:")
+          print(f"  F1 Macro : {f1:.4f}")
+          print(f"  ROC AUC  : {auc:.4f}")
+
+          # Quality gates
+          if f1 < 0.82:
+              print(f"❌ FAILED: F1={f1:.4f} below threshold 0.82")
+              exit(1)
+          if auc < 0.90:
+              print(f"❌ FAILED: AUC={auc:.4f} below threshold 0.90")
+              exit(1)
+
+          print("✅ All quality gates passed — model approved for deployment")
+          EOF
+
+      - name: Comment model metrics on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const meta = JSON.parse(fs.readFileSync('mlops/models/model_meta.json'));
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🧠 Model Training Results\n\n| Metric | Value |\n|---|---|\n| F1 Macro | ${meta.f1_macro} |\n| ROC AUC | ${meta.roc_auc} |\n| Trained At | ${meta.trained_at} |\n\n✅ Quality gates passed — ready to deploy.`
+            });
+
+  # ── 4. Integration Test (FastAPI smoke test) ──────────────────────────────────
+  integration-test:
+    name: 🔌 FastAPI Integration Test
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r mlops/requirements.txt
+
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: mlops/models/
+
+      - name: Start FastAPI server & smoke test
+        run: |
+          # Start server in background
+          python mlops/serve.py &
+          sleep 5
+
+          # Health check
+          curl -f http://localhost:8000/health || exit 1
+
+          # Prediction test with diabetic parameters
+          RESPONSE=$(curl -s -X POST http://localhost:8000/predict \
+            -H "Content-Type: application/json" \
+            -d '{
+              "glucose": 195, "hba1c": 8.2, "hemoglobin": 13.0,
+              "wbc": 8.5, "rbc": 4.7, "platelets": 220,
+              "cholesterol": 240, "ldl": 145, "hdl": 38, "triglycerides": 210,
+              "creatinine": 1.1, "urea": 18, "alt": 38, "ast": 32,
+              "tsh": 2.5, "vitamin_d": 18, "vitamin_b12": 300, "iron": 85,
+              "urine_protein": 0, "urine_glucose": 1, "urine_ketones": 0,
+              "urine_blood": 0, "urine_nitrite": 0, "urine_leukocytes": 0
+            }')
+
+          echo "Response: $RESPONSE"
+
+          # Validate response contains expected fields
+          echo $RESPONSE | python3 -c "
+          import sys, json
+          r = json.load(sys.stdin)
+          assert 'predicted_disease' in r, 'Missing predicted_disease'
+          assert 'confidence' in r, 'Missing confidence'
+          assert 'shap_top_factors' in r, 'Missing SHAP factors'
+          print(f'✅ Prediction: {r[\"predicted_disease\"]} ({r[\"confidence\"]}%)')
+          "
+
+  # ── 5. Deploy ─────────────────────────────────────────────────────────────────
+  deploy:
+    name: 🚀 Deploy Model
+    runs-on: ubuntu-latest
+    needs: integration-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download trained model
+        uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: mlops/models/
+
+      - name: Download reports
+        uses: actions/download-artifact@v4
+        with:
+          name: training-reports
+          path: mlops/reports/
+
+      - name: Commit model to repo
+        run: |
+          git config user.name  "HealthTrack MLOps Bot"
+          git config user.email "mlops@healthtrack.ai"
+          git add mlops/models/ mlops/reports/ || true
+          git diff --staged --quiet || git commit -m "🤖 Auto-deploy: Updated model $(date +%Y-%m-%d)"
+          git push || true
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const meta = JSON.parse(fs.readFileSync('mlops/models/model_meta.json'));
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `model-${new Date().toISOString().slice(0,10)}`,
+              name: `Model Release — ${new Date().toLocaleDateString()}`,
+              body: `## 🧠 HealthTrack AI Model Update\n\n**Metrics**\n- F1 Macro: ${meta.f1_macro}\n- ROC AUC: ${meta.roc_auc}\n- Trained: ${meta.trained_at}\n\n**Changes**\n- Retrained on latest clinical dataset\n- All quality gates passed ✅`,
+              draft: false,
+              prerelease: false,
+            });

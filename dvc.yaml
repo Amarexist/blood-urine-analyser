@@ -1,0 +1,36 @@
+stages:
+  generate_data:
+    cmd: python mlops/generate_data.py
+    deps:
+      - mlops/generate_data.py
+    outs:
+      - mlops/data/clinical_dataset.csv
+
+  train:
+    cmd: python mlops/train.py
+    deps:
+      - mlops/train.py
+      - mlops/data/clinical_dataset.csv
+    outs:
+      - mlops/models/healthtrack_model.json
+      - mlops/models/model_meta.json
+    metrics:
+      - mlops/reports/metrics.json:
+          cache: false
+
+  monitor:
+    cmd: python mlops/monitor.py
+    deps:
+      - mlops/monitor.py
+      - mlops/data/clinical_dataset.csv
+      - mlops/data/prediction_log.jsonl
+    outs:
+      - mlops/reports/
+
+params:
+  - mlops/params.yaml
+
+plots:
+  - mlops/reports/confusion_matrix.png
+  - mlops/reports/feature_importance.png
+  - mlops/reports/shap_summary.png
