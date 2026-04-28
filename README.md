@@ -416,3 +416,232 @@ This project is open-source under the **MIT License**.
 **Made with ❤️ — HealthTrack AI**
 
 </div>
+
+---
+
+## 🤖 MLOps Integration
+
+HealthTrack AI is backed by a **production-grade MLOps pipeline** that evolves the clinical engine from a static rule-based system into a continuously learning XGBoost model — with full experiment tracking, automated retraining, and drift monitoring.
+
+---
+
+### 🗺️ MLOps Architecture
+
+```
+Raw Clinical Data (DVC)
+        │
+        ▼
+generate_data.py ──► 30,000 synthetic samples (6 disease classes)
+        │
+        ▼
+train.py ──► XGBoost + Optuna Hyperparameter Search
+        │         + SMOTE class balancing
+        │         + SHAP explainability
+        │         + MLflow Experiment Tracking
+        │         + MLflow Model Registry
+        │
+        ▼
+Quality Gate ──► F1 Macro >= 0.82 | ROC AUC >= 0.90
+        │
+        ▼
+serve.py ──► FastAPI REST API (http://localhost:8000)
+        │         + SHAP factor explanations per prediction
+        │         + Prediction logging (JSONL)
+        │         + Feedback endpoint for corrections
+        │
+        ▼
+React Frontend ──► mlopsClient.ts (auto-detects FastAPI)
+        │         ✅ Server up  → XGBoost prediction + SHAP
+        │         ❌ Server down → Local rule engine (offline)
+        │
+        ▼
+monitor.py ──► Evidently AI Drift Detection
+                  + Compares training vs production distribution
+                  + Auto-triggers retraining if drift detected
+```
+
+---
+
+### 📦 MLOps Concepts Implemented
+
+| Concept | Tool | File | What It Does |
+|---------|------|------|--------------|
+| **Data Engineering** | NumPy / Pandas | `mlops/generate_data.py` | Generates 30,000 synthetic clinical samples across 6 disease classes with realistic parameter distributions |
+| **Data Versioning** | DVC | `dvc.yaml` | Tracks dataset versions like Git — ensures full reproducibility of every experiment |
+| **Experiment Tracking** | MLflow | `mlops/train.py` | Logs every training run: hyperparameters, F1, AUC, confusion matrix, feature importance plots |
+| **Hyperparameter Optimization** | Optuna | `mlops/train.py` | Runs 25 Bayesian optimization trials to find the best XGBoost configuration automatically |
+| **Class Balancing** | SMOTE | `mlops/train.py` | Oversamples minority disease classes so the model does not ignore rare conditions |
+| **Explainability** | SHAP | `mlops/train.py` + `mlops/serve.py` | Generates per-prediction explanations — which blood/urine value drove the diagnosis |
+| **Model Registry** | MLflow Registry | `mlops/train.py` | Stores model versions with lifecycle stages: Staging → Validation → Production → Archived |
+| **Model Serving** | FastAPI | `mlops/serve.py` | REST API with Swagger docs, CORS for React, prediction logging, and feedback endpoint |
+| **Drift Monitoring** | Evidently AI | `mlops/monitor.py` | Detects when real user inputs diverge from training data and triggers automatic retraining |
+| **Feedback Loop** | Custom | `mlops/serve.py` | Users can correct wrong diagnoses — corrections are stored and used in next retraining cycle |
+| **CI/CD Pipeline** | GitHub Actions | `.github/workflows/ml_pipeline.yml` | 5-stage automated pipeline: data → train → quality gate → integration test → deploy |
+| **Frontend Bridge** | TypeScript | `src/app/utils/mlopsClient.ts` | Auto-detects FastAPI server; falls back to offline rule engine transparently |
+
+---
+
+### 🚀 Quick Start — Run the ML Backend
+
+```bash
+# Step 1: Enter the mlops directory
+cd mlops
+
+# Step 2: Create Python virtual environment
+python -m venv venv
+source venv/bin/activate        # Mac/Linux
+# venv\Scripts\activate         # Windows
+
+# Step 3: Install all dependencies
+pip install -r requirements.txt
+
+# Step 4: Generate synthetic clinical training data (30k samples)
+python generate_data.py
+
+# Step 5: Train XGBoost model with MLflow + Optuna
+python train.py
+
+# Step 6: Start the FastAPI prediction server
+python serve.py
+# API docs  → http://localhost:8000/docs
+# Health    → http://localhost:8000/health
+
+# Step 7: (Optional) Open MLflow experiment dashboard
+mlflow ui --backend-store-uri sqlite:///mlops/mlflow.db
+# Dashboard → http://localhost:5000
+```
+
+Once `serve.py` is running, the **React app automatically switches to XGBoost predictions** — no extra configuration needed.
+
+---
+
+### 🔌 REST API Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Service info + model metadata |
+| GET | `/health` | Health check — `{ "model_loaded": true }` |
+| GET | `/model-info` | F1 score, ROC AUC, training timestamp |
+| POST | `/predict` | XGBoost prediction + SHAP explanations |
+| POST | `/feedback` | Submit corrected diagnosis for retraining |
+
+**Example — Prediction Request:**
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "glucose": 195, "hba1c": 8.2, "hemoglobin": 13.0,
+    "wbc": 8.5, "rbc": 4.7, "platelets": 220,
+    "cholesterol": 240, "ldl": 145, "hdl": 38, "triglycerides": 210,
+    "creatinine": 1.1, "urea": 18, "alt": 38, "ast": 32,
+    "tsh": 2.5, "vitamin_d": 18, "vitamin_b12": 300, "iron": 85,
+    "urine_protein": 0, "urine_glucose": 1, "urine_ketones": 0,
+    "urine_blood": 0, "urine_nitrite": 0, "urine_leukocytes": 0
+  }'
+```
+
+**Example — Prediction Response:**
+
+```json
+{
+  "predicted_disease": "Type 2 Diabetes",
+  "confidence": 91.4,
+  "risk_level": "High",
+  "all_probabilities": {
+    "Healthy": 1.2,
+    "Type 2 Diabetes": 91.4,
+    "Iron / B12 Anaemia": 2.1,
+    "Chronic Kidney Disease": 3.5,
+    "Liver Disease": 0.8,
+    "Hypothyroidism": 1.0
+  },
+  "shap_top_factors": [
+    { "feature": "hba1c",        "impact": 0.842 },
+    { "feature": "glucose",      "impact": 0.731 },
+    { "feature": "urine_glucose","impact": 0.412 },
+    { "feature": "triglycerides","impact": 0.198 },
+    { "feature": "hdl",          "impact": -0.156 }
+  ],
+  "description": "Elevated blood sugar and HbA1c suggesting diabetes.",
+  "model_version": "1b33281a",
+  "inference_ms": 12.4
+}
+```
+
+---
+
+### ⚙️ GitHub Actions CI/CD Pipeline
+
+Automatically runs every Monday at 2 AM UTC and on every push to `mlops/`:
+
+```
+Stage 1 — Data        Generate / pull latest clinical dataset (DVC)
+Stage 2 — Train       XGBoost + Optuna 25-trial hyperparameter search
+Stage 3 — Validate    Quality Gate: F1 >= 0.82 AND ROC AUC >= 0.90
+Stage 4 — Test        FastAPI smoke test with live diabetic prediction
+Stage 5 — Deploy      Commit model to repo + create GitHub Release tag
+```
+
+On Pull Requests, the pipeline automatically **comments the model metrics** on the PR so reviewers can see if the new model is better or worse.
+
+---
+
+### 📉 Drift Monitoring
+
+Run weekly or on-demand to detect when real user inputs diverge from the training distribution:
+
+```bash
+python mlops/monitor.py
+```
+
+Output example:
+```
+=======================================================
+  DRIFT MONITORING REPORT — 2026-04-28
+=======================================================
+  Status             : NO DRIFT
+  Production samples : 1,240
+  Drifted columns    : 8.3%
+  Missing values     : 0.00%
+
+  Critical Features:
+    ✅ glucose               p=0.3412
+    ✅ hba1c                 p=0.2891
+    ⚠️ creatinine            p=0.0312   ← drift detected
+    ✅ alt                   p=0.5102
+    ✅ tsh                   p=0.4821
+    ✅ hemoglobin            p=0.6203
+
+  Action needed: YES — trigger retraining!
+=======================================================
+```
+
+If drift exceeds the threshold, `monitor.py` **automatically runs `train.py`** to retrain the model on fresh data.
+
+---
+
+### 🤝 Feedback Loop
+
+When the model makes a wrong prediction, users can submit a correction:
+
+```bash
+curl -X POST http://localhost:8000/feedback \
+  -H "Content-Type: application/json" \
+  -d '{ "corrected": "Iron / B12 Anaemia" }'
+```
+
+Corrections are stored in `mlops/data/feedback_log.jsonl`. When enough corrections accumulate (default: 500), the next training cycle incorporates them as labeled ground-truth data — making the model progressively more accurate over time.
+
+---
+
+### 🧬 Disease Classes Trained
+
+| Class | Disease | Key Discriminating Features |
+|-------|---------|---------------------------|
+| 0 | Healthy | All parameters within normal range |
+| 1 | Type 2 Diabetes | Glucose greater than 126, HbA1c greater than 6.5%, Urine glucose positive |
+| 2 | Iron / B12 Anaemia | Haemoglobin below 12, Iron below 60, B12 below 200 |
+| 3 | Chronic Kidney Disease | Creatinine elevated, Urea elevated, Urine protein positive |
+| 4 | Liver Disease | ALT greater than 56, AST greater than 40, Elevated bilirubin |
+| 5 | Hypothyroidism | TSH greater than 4.5, High cholesterol, Low metabolism markers |
