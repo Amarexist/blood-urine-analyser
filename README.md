@@ -415,7 +415,7 @@ This project is open-source under the **MIT License**.
 
 **Made with ❤️ — HealthTrack AI**
 
-</div>
+<div align="left">
 
 ---
 
@@ -645,3 +645,7 @@ Corrections are stored in `mlops/data/feedback_log.jsonl`. When enough correctio
 | 3 | Chronic Kidney Disease | Creatinine elevated, Urea elevated, Urine protein positive |
 | 4 | Liver Disease | ALT greater than 56, AST greater than 40, Elevated bilirubin |
 | 5 | Hypothyroidism | TSH greater than 4.5, High cholesterol, Low metabolism markers |
+
+</div>
+
+</div>
