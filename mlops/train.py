@@ -119,13 +119,27 @@ def plot_feature_importance(model, feature_names, path):
     plt.close()
 
 def plot_shap(model, X_sample, feature_names, path):
-    explainer  = shap.TreeExplainer(model)
-    shap_vals  = explainer.shap_values(X_sample)
-    fig, ax    = plt.subplots(figsize=(10, 6))
-    shap.summary_plot(shap_vals, X_sample, feature_names=feature_names,
-                      plot_type="bar", show=False)
+    explainer = shap.TreeExplainer(model)
+    shap_vals = explainer.shap_values(X_sample)
+
+    if isinstance(shap_vals, list):
+        mean_abs = np.mean(np.abs(np.stack(shap_vals, axis=0)), axis=(0, 1))
+    else:
+        shap_arr = np.asarray(shap_vals)
+        if shap_arr.ndim == 3:
+            mean_abs = np.mean(np.abs(shap_arr), axis=(0, 2))
+        else:
+            mean_abs = np.mean(np.abs(shap_arr), axis=0)
+
+    idx = np.argsort(mean_abs)[::-1]
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.bar(range(len(mean_abs)), mean_abs[idx], color=plt.cm.magma(np.linspace(0.2, 0.8, len(mean_abs))))
+    ax.set_xticks(range(len(mean_abs)))
+    ax.set_xticklabels([feature_names[i] for i in idx], rotation=45, ha="right", fontsize=9)
+    ax.set_title("Mean Absolute SHAP Impact — HealthTrack AI")
+    ax.set_ylabel("Mean |SHAP value|")
     plt.tight_layout()
-    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.savefig(path, dpi=150)
     plt.close()
 
 # ── Main Training ─────────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ import ReportView from './pages/ReportView';
 import ManualEntry from './pages/ManualEntry';
 import AnalysisResult from './pages/AnalysisResult';
 import WellnessChat from './pages/WellnessChat';
+import NearbyHospitals from './pages/NearbyHospitals';
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
   {
     path: '/wellness-chat',
     Component: WellnessChat,
+  },
+  {
+    path: '/nearby-hospitals',
+    Component: NearbyHospitals,
   },
   {
     path: '*',

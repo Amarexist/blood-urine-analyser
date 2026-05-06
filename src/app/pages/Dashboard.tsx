@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Activity, ClipboardList, Heart, ShoppingBag, ExternalLink, Pill, Stethoscope, Truck } from 'lucide-react';
+import { Activity, ClipboardList, Heart, ShoppingBag, ExternalLink, Pill, Stethoscope, Truck, MapPin, Phone } from 'lucide-react';
 
 const pharmacies = [
   {
@@ -128,6 +128,35 @@ export default function Dashboard() {
               </div>
             </div>
           </Link>
+
+          {/* Nearby Hospitals */}
+          <Link to="/nearby-hospitals" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #dc2626, #f97316)',
+              borderRadius: 20, padding: 28, cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: '0 8px 32px rgba(220,38,38,0.3)',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 16px 48px rgba(220,38,38,0.4)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 32px rgba(220,38,38,0.3)'; }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MapPin size={24} color="#fff" />
+                </div>
+                <span style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 20 }}>🚨 Emergency</span>
+              </div>
+              <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Nearby Hospitals</h2>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>
+                Find hospitals, clinics &amp; pharmacies near you using GPS. Access emergency helpline numbers instantly.
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {['GPS Locator', '15km Radius', 'Ambulance Helpline'].map(tag => (
+                  <span key={tag} style={{ background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '3px 10px', borderRadius: 10 }}>{tag}</span>
+                ))}
+              </div>
+            </div>
+          </Link>
         </div>
 
         {/* Online Pharmacy Section */}
@@ -179,7 +208,7 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-                <div style={{ marginTop: 16, padding: '8px 14px', background: `linear-gradient(135deg, var(--from), var(--to))`, borderRadius: 10, textAlign: 'center', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ marginTop: 16, padding: '8px 14px', background: 'rgba(255,255,255,0.07)', borderRadius: 10, textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
                   <span style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 600 }}>Visit {p.name} →</span>
                 </div>
               </div>

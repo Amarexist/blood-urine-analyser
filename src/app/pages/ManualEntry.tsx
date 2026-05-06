@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { ArrowLeft, Activity, Droplet, Stethoscope, AlertCircle, Sliders, ChevronDown, ChevronUp, Cpu, Zap } from 'lucide-react';
+import { ArrowLeft, Activity, Droplet, Stethoscope, AlertCircle, Sliders, ChevronDown, ChevronUp } from 'lucide-react';
 import { analyzeLocally } from '../utils/localAnalyzer';
 import { isMLServerAvailable, callMLBackend } from '../utils/mlopsClient';
 
@@ -386,21 +386,23 @@ export default function ManualEntry() {
 
           // Build a result object compatible with AnalysisResult page
           const analysisId = `ml-${Date.now().toString(36)}`;
+          const {
+            id: localAnalysisId,
+            patientInfo: localPatientInfo,
+            ...localAnalysis
+          } = analyzeLocally({
+            patientInfo,
+            bloodParameters: bloodParams as Record<string, string>,
+            urineParameters: urineParams as Record<string, string>,
+            symptoms: selectedSymptoms,
+          });
           const enriched = {
             id: analysisId,
             source: 'ml-model',
             patientInfo,
             mlPrediction: mlResult,
             // Also run local engine for diet/nutrition/lifestyle recommendations
-            ...analyzeLocally({
-              patientInfo,
-              bloodParameters: bloodParams as Record<string, string>,
-              urineParameters: urineParams as Record<string, string>,
-              symptoms: selectedSymptoms,
-            }),
-            id: analysisId,
-            mlPrediction: mlResult,
-            source: 'ml-model',
+            ...localAnalysis,
           };
           sessionStorage.setItem(`analysis_${analysisId}`, JSON.stringify(enriched));
           navigate(`/analysis/${analysisId}`);

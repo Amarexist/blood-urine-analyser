@@ -4,3 +4,13 @@ dist/
 *.local
 .env
 .env.*
+
+# IDE
+.vscode/
+
+# MLOps artifacts
+mlops/data/
+mlops/models/
+mlops/reports/
+mlops/mlflow.db
+mlruns/

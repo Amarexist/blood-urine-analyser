@@ -5,6 +5,7 @@ Loads the trained XGBoost model from MLflow and serves predictions via REST API.
 import json
 import time
 import logging
+from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import datetime
 
@@ -15,7 +16,7 @@ import mlflow.xgboost
 from xgboost import XGBClassifier
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
 logging.basicConfig(level=logging.INFO)
@@ -72,10 +73,19 @@ def load_model():
     log.info(f"   F1 Macro={meta.get('f1_macro')}  ROC AUC={meta.get('roc_auc')}")
 
 # ── FastAPI App ───────────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        load_model()
+    except FileNotFoundError as e:
+        log.warning(f"⚠️  {e}")
+    yield
+
 app = FastAPI(
     title="HealthTrack AI — Clinical Analysis API",
     description="XGBoost-powered disease prediction from blood and urine parameters.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -84,13 +94,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.on_event("startup")
-def startup():
-    try:
-        load_model()
-    except FileNotFoundError as e:
-        log.warning(f"⚠️  {e}")
 
 # ── Request / Response Models ─────────────────────────────────────────────────
 class BloodUrineParams(BaseModel):
@@ -122,6 +125,8 @@ class BloodUrineParams(BaseModel):
     urine_leukocytes: float = Field(0, ge=0, le=1)
 
 class PredictionResult(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
     predicted_disease:   str
     confidence:          float
     risk_level:          str
@@ -167,11 +172,16 @@ def predict(params: BloodUrineParams):
 
     # SHAP explanation
     shap_vals = explainer.shap_values(row)
-    # For multiclass, pick shap values for predicted class
+    # For multiclass, SHAP may return either a list[class][row, feature]
+    # or an array shaped [row, feature, class], depending on library versions.
     if isinstance(shap_vals, list):
         sv = shap_vals[pred_idx][0]
     else:
-        sv = shap_vals[pred_idx]
+        shap_arr = np.asarray(shap_vals)
+        if shap_arr.ndim == 3:
+            sv = shap_arr[0, :, pred_idx]
+        else:
+            sv = shap_arr[0]
 
     top_factors = sorted(
         [{"feature": FEATURES[i], "impact": round(float(sv[i]), 4)} for i in range(len(FEATURES))],
@@ -199,7 +209,7 @@ def predict(params: BloodUrineParams):
     with open(LOG_PATH, "a") as f:
         log_entry = {
             "timestamp":        datetime.now().isoformat(),
-            "inputs":           params.dict(),
+            "inputs":           params.model_dump(),
             "predicted":        result.predicted_disease,
             "confidence":       result.confidence,
         }

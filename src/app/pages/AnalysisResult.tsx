@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { ArrowLeft, AlertTriangle, CheckCircle, TrendingUp, Utensils, Activity, Heart, Pill } from 'lucide-react';
+import { projectId } from '/utils/supabase/info';
 
 interface Disease {
   name: string;
